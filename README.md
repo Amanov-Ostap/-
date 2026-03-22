@@ -3,22 +3,22 @@
 Изображения 
 Тема № 72 
 Детекция износа и повреждения поверхности дорожного покрытия
-file:///C:/Users/ao585/OneDrive/Desktop/PavementDamagesG-7.zip
+
 
 Аудио
 Тема № 67
 Транскрибация и протоколирование контрольного мероприятия инспектором
-
+https://openslr.trmal.net/resources/114/golos_opus.tar.gz
 
 Временые ряды
 Тема № 64
 Ранее обнаружение перегрева подшипника по тренду температуры
-
+https://zenodo.org/api/records/14871584/files-archive
 
 Текст
 Тема № 50
 Создание системы, позволяющую пользователю задавать вопрос на естественном языке и получать соответствующие данные из базы данных
-
+https://drive.usercontent.google.com/download?id=1Xjbp207zfCaBxhPgt-STB_RxwNo2TIW2&export=download&authuser=0&confirm=t&uuid=18794e89-b808-44c7-85dd-f0b055c2dd42&at=AGN2oQ3MG1zGJ5MthjC9NvmF-8kT%3A1773575091515
 
 Таблицы
 Прогнозиование сердечно-сосудистых заболеваний
