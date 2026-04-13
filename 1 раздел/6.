@@ -1,0 +1,8 @@
+import pandas as pd
+
+df = pd.read_csv("C:\\Users\\ao585\Downloads\\test (1) (1).csv")
+
+full_duplicates = df.duplicated().sum()
+print(f"Мощность датасета: {df.shape}")
+print(f"Количество дублированных строк: {full_duplicates}")
+print(f"Уникальных строк: {len(df) - full_duplicates}")
