@@ -1,1 +1,33 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+import os
 
+# Загрузка датасета
+df = pd.read_csv("C:\\Users\\ao585\Downloads\\test (1) (1).csv")
+print("Размер датасета:", df.shape)
+
+# Создание папки для графиков
+os.makedirs('output', exist_ok=True)
+
+# Построение диаграмм распределения
+fig, axes = plt.subplots(3, 5, figsize=(15, 9))
+axes = axes.ravel()
+
+for i, col in enumerate(df.columns):
+    if df[col].dtype == 'object':
+        # Барплот для категориальных
+        df[col].value_counts().plot(kind='bar', ax=axes[i], color='skyblue')
+        axes[i].set_title(f'{col} (категориальный)')
+    else:
+        # Гистограмма для числовых
+        axes[i].hist(df[col], bins=min(30, len(df[col].unique())), alpha=0.7, color='lightcoral', edgecolor='black')
+        axes[i].set_title(f'{col} (числовой)')
+
+    axes[i].tick_params(axis='x', rotation=45)
+    axes[i].grid(True, alpha=0.3)
+
+plt.suptitle('Распределение признаков датасета ССЗ', fontsize=16)
+plt.tight_layout()
+plt.savefig('output/all_distributions.png', dpi=150, bbox_inches='tight')
+plt.show()
