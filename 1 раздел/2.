@@ -1,0 +1,36 @@
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+
+# Загрузка и настройка
+df = pd.read_csv("C:\\Users\\ao585\Downloads\\test (1) (1).csv")
+os.makedirs('output', exist_ok=True)
+sns.set_style("whitegrid")
+plt.style.use('seaborn-v0_8')
+
+# 1. Heatmap корреляций (все числовые пары)
+plt.figure(figsize=(12, 10))
+numeric_cols = df.select_dtypes(include=[np.number]).columns.drop('id')  # Без id
+sns.heatmap(df[numeric_cols].corr(), annot=True, cmap='coolwarm', center=0, fmt='.2f')
+plt.title('Матрица корреляций признаков ССЗ')
+plt.tight_layout()
+plt.savefig('output/seaborn_corr_heatmap.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+# 2. Violin plot: Age vs Chest pain type
+plt.figure(figsize=(10, 6))
+sns.violinplot(data=df, x='Chest pain type', y='Age', palette='Set2')
+plt.title('Распределение возраста по типам боли в груди')
+plt.savefig('output/seaborn_violin_age_chestpain.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+# 3. Scatterplot: BP vs Max HR с цветом по Number of vessels
+plt.figure(figsize=(10, 7))
+sns.scatterplot(data=df, x='BP', y='Max HR', hue='Number of vessels fluro', alpha=0.6, palette='tab10')
+plt.title('Зависимость давления от максимального пульса')
+plt.savefig('output/seaborn_scatter_bp_hr.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+print("Графики сохранены в output/")
