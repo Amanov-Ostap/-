@@ -1,0 +1,14 @@
+import pandas as pd
+import plotly.express as px
+df = pd.read_csv("C:\\Users\\ao585\Downloads\\test (1) (1).csv")
+
+# 1. Scatter Age-Cholesterol
+fig1 = px.scatter(df.sample(10000), x='Age', y='Cholesterol', color='Sex',
+                  hover_data=['BP'], title='Plotly: Age vs Cholesterol (zoom/hover)')
+fig1.show()
+
+# 2. Box Age_group vs Vessels
+df['Age_group'] = pd.cut(df['Age'], bins=5)
+fig2 = px.box(df.sample(20000), x='Age_group', y='Number of vessels fluro',
+              color='Exercise angina', title='Plotly: Возраст vs Сосуды')
+fig2.show()
