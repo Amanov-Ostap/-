@@ -1,0 +1,30 @@
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+
+df = pd.read_csv("C:\\Users\\ao585\Downloads\\test (1) (1).csv")
+os.makedirs('output', exist_ok=True)
+
+# Биннинг + crosstab
+df['BP_bin'] = pd.cut(df['BP'], bins=10)
+df['HR_bin'] = pd.cut(df['Max HR'], bins=10)
+heatmap_data = pd.crosstab(df['BP_bin'], df['HR_bin'], normalize='index') * 100
+
+# Тепловая карта
+plt.figure(figsize=(10, 6))
+sns.heatmap(heatmap_data, annot=True, fmt='.1f', cmap='Blues')
+plt.title('Зависимость BP и Max HR')
+plt.xlabel('Max HR (бины)')
+plt.ylabel('BP (бины)')
+plt.savefig('output/heatmap_bp_hr.png', dpi=150)
+plt.show()
+
+# Карта 2: Crosstab (ФИКС labels)
+crosstab = pd.crosstab(df['Chest pain type'], df['Number of vessels fluro'], normalize='index')*100
+fig, ax = plt.subplots(figsize=(10, 6))
+sns.heatmap(crosstab, annot=True, fmt='.1f', cmap='YlOrRd', xticklabels=[0,1,2,3], yticklabels=[1,2,3,4], ax=ax)
+ax.set_title('Chest pain vs Vessels (%)', pad=20)
+plt.savefig('output/heatmap_crosstab.png', dpi=150, bbox_inches='tight')
+plt.show()
