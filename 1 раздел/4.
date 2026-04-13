@@ -1,0 +1,7 @@
+import pandas as pd
+
+df = pd.read_csv("C:\\Users\\ao585\Downloads\\test (1) (1).csv")
+missing_stats = df.isnull().sum()
+print("Пропуски по столбцам:\n", missing_stats[missing_stats > 0])
+print(f"\nОбщее количество пропусков: {df.isnull().sum().sum()}")
+print(f"Доля пропусков: {df.isnull().sum().sum() / (len(df) * len(df.columns)):.1%}")
