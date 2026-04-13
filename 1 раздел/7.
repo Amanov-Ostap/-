@@ -1,0 +1,40 @@
+import pandas as pd
+import numpy as np
+
+# Загрузка датасета
+df = pd.read_csv("C:\\Users\\ao585\Downloads\\test (1) (1).csv")
+
+# ФИЛЬТР 1: Один признак — возраст >60
+filter1 = df[df['Age'] > 60]
+print("\nФИЛЬТР 1: Возраст >60 лет")
+print(f"Количество: {len(filter1)} ({len(filter1)/len(df)*100:.1f}%)")
+print(filter1[['Age', 'BP', 'Cholesterol', 'Number of vessels fluro']].describe())
+
+# ФИЛЬТР 2: Два признака — мужчины с высоким давлением
+filter2 = df[(df['Sex'] == 1) & (df['BP'] > 140)]
+print("\nФИЛЬТР 2: Мужчины BP>140")
+print(f"Количество: {len(filter2)} ({len(filter2)/len(df)*100:.1f}%)")
+print(filter2[['Sex', 'BP', 'Max HR', 'ST depression']].describe())
+
+# ФИЛЬТР 3: Три+ признака — рисковая группа
+filter3 = df[(df['Age'] > 55) & (df['Cholesterol'] > 250) & (df['Number of vessels fluro'] > 1)]
+print("\nФИЛЬТР 3: Рисковая группа (55+, Chol>250, >1 сосуд)")
+print(f"Количество: {len(filter3)} ({len(filter3)/len(df)*100:.1f}%)")
+print(filter3[['Age', 'Cholesterol', 'Number of vessels fluro', 'Thallium']].describe())
+
+# ФИЛЬТР 4: Категориальный — тип боли 1 + Exercise angina
+filter4 = df[(df['Chest pain type'] == 1) & (df['Exercise angina'] == 1)]
+print("\nФИЛЬТР 4: Типичная стенокардия + на нагрузке")
+print(f"Количество: {len(filter4)} ({len(filter4)/len(df)*100:.1f}%)")
+print(filter4['Max HR'].describe(), "\n")
+
+# Универсальная функция
+def filter_group(df, conditions, name):
+    filtered = df[conditions]
+    pct = len(filtered) / len(df) * 100
+    print(f"{name}: {len(filtered)} ({pct:.1f}%)")
+    return filtered
+
+risky = filter_group(df,
+    (df['Age'] > 55) & (df['Cholesterol'] > 250) & (df['Number of vessels fluro'] > 1),
+    "Группа риска")
