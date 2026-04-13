@@ -1,0 +1,35 @@
+import pandas as pd
+import numpy as np
+
+df = pd.read_csv("C:\\Users\\ao585\Downloads\\test (1) (1).csv")
+df_original = df.copy()
+
+# Параметры шума
+noise_params = {
+    'BP': 3.0,           # мм рт.ст. (±2% std)
+    'Cholesterol': 7.0   # мг/дл (±2% std)
+}
+
+# Добавление шума К ДВУМ признакам
+df_noisy = df.copy()
+np.random.seed(42)  # Репродуцируемость
+
+for feature, sigma in noise_params.items():
+    noise = np.random.normal(0, sigma, size=len(df))
+    df_noisy[feature] = df_noisy[feature] + noise
+    # Ограничения реализма
+    if feature == 'BP':
+        df_noisy[feature] = np.clip(df_noisy[feature], 80, 220)
+    elif feature == 'Cholesterol':
+        df_noisy[feature] = np.clip(df_noisy[feature], 100, 600)
+
+# Объединение: оригинал + шум
+df_augmented = pd.concat([df_original, df_noisy], ignore_index=True)
+
+print("=== СТАТИСТИКА ДО/ПОСЛЕ ===")
+print("ОРИГИНАЛ:")
+print(df[['BP', 'Cholesterol']].describe())
+print("\nЗАШУМЛЁННЫЙ:")
+print(df_noisy[['BP', 'Cholesterol']].describe())
+print("\nАУГМЕНТИРОВАННЫЙ (540k строк):")
+print(df_augmented[['BP', 'Cholesterol']].describe())
