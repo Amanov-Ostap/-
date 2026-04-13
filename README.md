@@ -11,9 +11,8 @@
 https://openslr.trmal.net/resources/114/golos_opus.tar.gz
 
 Временые ряды
-Тема № 64
-Ранее обнаружение перегрева подшипника по тренду температуры
-https://zenodo.org/api/records/14871584/files-archive
+Поиск аномалий для мониторинга нарушений сердечного ритма (аритмии) у пациентов
+https://zenodo.org/records/3625027 
 
 Текст
 Тема № 50
