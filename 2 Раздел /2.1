@@ -1,1 +1,47 @@
+import wfdb
+import matplotlib.pyplot as plt
+import numpy as np
 
+# ===================== НАСТРОЙКИ =====================
+record_name = '800'  # Можно менять: 800, 801, 850, 851 и т.д.
+database_path = 'mit-bih-supraventricular-arrhythmia-database-1.0.0'  # папка после распаковки
+
+# Загружаем запись
+record = wfdb.rdrecord(f'{database_path}/{record_name}')
+annotation = wfdb.rdann(f'{database_path}/{record_name}', 'atr')
+
+print(f"Запись {record_name}")
+print(f"Частота дискретизации: {record.fs} Гц")
+print(f"Длительность: {record.sig_len / record.fs / 60:.1f} минут")
+print(f"Количество каналов: {record.n_sig}")
+
+# ===================== ВИЗУАЛИЗАЦИЯ =====================
+fig, axs = plt.subplots(2, 1, figsize=(14, 8), sharex=True)
+
+# Первый канал
+axs[0].plot(record.p_signal[:, 0], color='blue', linewidth=0.8)
+axs[0].set_title(f'ECG Channel 1 — Record {record_name}')
+axs[0].set_ylabel('Амплитуда (mV)')
+axs[0].grid(True, alpha=0.3)
+
+# Второй канал
+axs[1].plot(record.p_signal[:, 1], color='red', linewidth=0.8)
+axs[1].set_title(f'ECG Channel 2 — Record {record_name}')
+axs[1].set_ylabel('Амплитуда (mV)')
+axs[1].set_xlabel('Отсчёты (samples)')
+axs[1].grid(True, alpha=0.3)
+
+# Добавляем аннотации (маркеры аритмий)
+for i, sample in enumerate(annotation.sample):
+    if i > 50:  # первые 50 аннотаций
+        break
+    symbol = annotation.symbol[i]
+    if symbol in ['N', 'S', 'V', 'F', 'Q', '/']:  # основные типы
+        axs[0].axvline(x=sample, color='green', alpha=0.4, linestyle='--', linewidth=0.7)
+        axs[0].text(sample, axs[0].get_ylim()[1]*0.9, symbol,
+                   rotation=90, fontsize=9, color='darkgreen')
+
+plt.suptitle(f'MIT-BIH Supraventricular Arrhythmia Database — Record {record_name}',
+             fontsize=16, fontweight='bold')
+plt.tight_layout()
+plt.show()
