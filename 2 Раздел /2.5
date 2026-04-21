@@ -1,1 +1,81 @@
+import wfdb
+import matplotlib.pyplot as plt
+import numpy as np
 
+# ========================= НАСТРОЙКИ =========================
+record_name = '800'  # ← Меняй здесь: 800, 850, 811, 873, 890 и т.д.
+path = 'mit-bih-supraventricular-arrhythmia-database-1.0.0'
+
+sec_to_show = 60  # Сколько секунд показывать на графике (10, 30, 60...)
+
+# ========================= ЗАГРУЗКА =========================
+record = wfdb.rdrecord(f'{path}/{record_name}')
+
+# ========================= АНАЛИЗ ДИАПАЗОНОВ ЗНАЧЕНИЙ =========================
+print("=== АНАЛИЗ ДИАПАЗОНОВ ЗНАЧЕНИЙ (полный сигнал) ===")
+
+for ch in range(2):
+    sig = record.p_signal[:, ch]  # весь канал
+
+    # Основные статистики диапазона
+    min_val = sig.min()
+    max_val = sig.max()
+    range_val = max_val - min_val
+    mean_val = sig.mean()
+    std_val = sig.std()
+
+    # Процентили (очень полезно для ЭКГ)
+    p1 = np.percentile(sig, 1)
+    p5 = np.percentile(sig, 5)
+    p95 = np.percentile(sig, 95)
+    p99 = np.percentile(sig, 99)
+
+    print(f"Канал {ch + 1}:")
+    print(f"   Мин:          {min_val:8.3f} mV")
+    print(f"   Макс:         {max_val:8.3f} mV")
+    print(f"   Диапазон:     {range_val:8.3f} mV")
+    print(f"   Среднее:      {mean_val:8.3f} mV")
+    print(f"   Стд. откл.:   {std_val:8.3f} mV")
+    print(f"   1%  перцентиль: {p1:8.3f} mV")
+    print(f"   5%  перцентиль: {p5:8.3f} mV")
+    print(f"   95% перцентиль: {p95:8.3f} mV")
+    print(f"   99% перцентиль: {p99:8.3f} mV")
+    print(f"   99% значений лежит в диапазоне: [{p1:.3f}, {p99:.3f}] mV\n")
+
+# ========================= ВИЗУАЛИЗАЦИЯ =========================
+samples = int(sec_to_show * record.fs)
+time = np.arange(samples) / record.fs
+
+sig1 = record.p_signal[:samples, 0]
+sig2 = record.p_signal[:samples, 1]
+
+fig, axs = plt.subplots(2, 2, figsize=(16, 9), constrained_layout=True)
+
+# Верхний ряд — временные ряды
+axs[0, 0].plot(time, sig1, color='#1f77b4', linewidth=0.9)
+axs[0, 0].set_title(f'Запись {record_name} — Канал 1 (первые {sec_to_show} сек)', fontsize=13, fontweight='bold')
+axs[0, 0].set_ylabel('Амплитуда (mV)')
+axs[0, 0].grid(True, alpha=0.3)
+
+axs[0, 1].plot(time, sig2, color='#ff7f0e', linewidth=0.9)
+axs[0, 1].set_title(f'Запись {record_name} — Канал 2 (первые {sec_to_show} сек)', fontsize=13, fontweight='bold')
+axs[0, 1].set_ylabel('Амплитуда (mV)')
+axs[0, 1].grid(True, alpha=0.3)
+
+# Нижний ряд — гистограммы распределения значений (полный сигнал!)
+axs[1, 0].hist(record.p_signal[:, 0], bins=200, color='#1f77b4', alpha=0.8, edgecolor='black', linewidth=0.5)
+axs[1, 0].set_title('Распределение амплитуд — Канал 1 (весь сигнал)')
+axs[1, 0].set_xlabel('Амплитуда (mV)')
+axs[1, 0].set_ylabel('Количество сэмплов')
+axs[1, 0].grid(True, alpha=0.3)
+
+axs[1, 1].hist(record.p_signal[:, 1], bins=200, color='#ff7f0e', alpha=0.8, edgecolor='black', linewidth=0.5)
+axs[1, 1].set_title('Распределение амплитуд — Канал 2 (весь сигнал)')
+axs[1, 1].set_xlabel('Амплитуда (mV)')
+axs[1, 1].set_ylabel('Количество сэмплов')
+axs[1, 1].grid(True, alpha=0.3)
+
+plt.suptitle(f'Анализ диапазонов значений — Запись {record_name}',
+             fontsize=16, fontweight='bold')
+
+plt.show()
