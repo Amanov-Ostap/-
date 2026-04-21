@@ -1,1 +1,57 @@
+import wfdb
+import matplotlib.pyplot as plt
+import numpy as np
 
+# ========================= НАСТРОЙКИ =========================
+record_name = '800'          # Замените на любой: 801, 850, 851, 862 и т.д.
+path = 'mit-bih-supraventricular-arrhythmia-database-1.0.0'
+
+# Загрузка данных
+record = wfdb.rdrecord(f'{path}/{record_name}')
+ann = wfdb.rdann(f'{path}/{record_name}', 'atr')
+
+print(f"Запись {record_name} — {record.sig_len / record.fs / 60:.1f} минут")
+
+# ========================= ВИЗУАЛИЗАЦИЯ =========================
+# Первые 60 секунд (можно увеличить)
+sec_to_show = 60
+samples = int(sec_to_show * record.fs)
+
+time = np.arange(samples) / record.fs
+sig1 = record.p_signal[:samples, 0]
+sig2 = record.p_signal[:samples, 1]
+
+fig, axs = plt.subplots(3, 1, figsize=(16, 8), sharex=True, height_ratios=[1, 1, 0.3])
+
+# Канал 1
+axs[0].plot(time, sig1, color='#1f77b4', linewidth=0.9)
+axs[0].set_title(f'Запись {record_name} — Канал 1', fontsize=14, fontweight='bold')
+axs[0].set_ylabel('Амплитуда (mV)')
+axs[0].grid(True, alpha=0.3)
+
+# Канал 2
+axs[1].plot(time, sig2, color='#ff7f0e', linewidth=0.9)
+axs[1].set_title(f'Запись {record_name} — Канал 2', fontsize=14, fontweight='bold')
+axs[1].set_ylabel('Амплитуда (mV)')
+axs[1].grid(True, alpha=0.3)
+
+# Аннотации (маркеры ритма)
+for i, sample in enumerate(ann.sample):
+    if sample >= samples:
+        break
+    sym = ann.symbol[i]
+    color = 'green' if sym == 'N' else 'red' if sym in ['S','A','J'] else 'purple' if sym == 'V' else 'gray'
+    axs[0].axvline(x=sample/record.fs, color=color, alpha=0.6, linestyle='--', linewidth=0.8)
+    axs[0].text(sample/record.fs + 0.02, axs[0].get_ylim()[1]*0.92, sym,
+                fontsize=9, color=color, rotation=90)
+
+# Легенда типов
+axs[2].axis('off')
+legend_text = "N = Нормальный   |   S/A/J = Суправентрикулярный   |   V = Желудочковый   |   / = Артефакт"
+axs[2].text(0.5, 0.5, legend_text, ha='center', va='center', fontsize=11,
+            bbox=dict(facecolor='lightgray', alpha=0.5))
+
+plt.suptitle(f'MIT-BIH Supraventricular Arrhythmia Database — Исходные ЭКГ сигналы\n'
+             f'Запись {record_name} • {sec_to_show} секунд', fontsize=16)
+plt.tight_layout()
+plt.show()
