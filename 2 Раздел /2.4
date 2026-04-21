@@ -1,1 +1,82 @@
+import wfdb
+import matplotlib.pyplot as plt
+import numpy as np
 
+# НАСТРОЙКИ
+record_name = '800' # Можно менять на любую запись
+path = 'mit-bih-supraventricular-arrhythmia-database-1.0.0'
+
+sec_to_show = 10  # Можно указывать любую длительность в секундах
+
+# ЗАГРУЗКА
+record = wfdb.rdrecord(f'{path}/{record_name}')
+
+# АНАЛИЗ ПРОПУСКОВ И ВЫБРОСОВ
+print("=== АНАЛИЗ ПРОПУСКОВ И ВЫБРОСОВ ===")
+
+for ch in range(2):
+    sig = record.p_signal[:, ch]
+
+    # Пропуски
+    missing_count = np.isnan(sig).sum()
+    missing_pct = missing_count / len(sig) * 100
+
+    # Выбросы по IQR
+    q1 = np.percentile(sig, 25)
+    q3 = np.percentile(sig, 75)
+    iqr = q3 - q1
+    lower = q1 - 1.5 * iqr
+    upper = q3 + 1.5 * iqr
+
+    outliers_mask = (sig < lower) | (sig > upper)
+    outliers_count = outliers_mask.sum()
+    outliers_pct = outliers_count / len(sig) * 100
+
+    print(f"Канал {ch + 1}:")
+    print(f"   Пропуски:     {missing_count} ({missing_pct:.4f}%)")
+    print(f"   Выбросы (IQR): {outliers_count} ({outliers_pct:.2f}%)")
+    print(f"   Мин: {sig.min():.2f}   Макс: {sig.max():.2f}   Среднее: {sig.mean():.2f}\n")
+
+# ========================= ВИЗУАЛИЗАЦИЯ =========================
+samples = int(sec_to_show * record.fs)
+time = np.arange(samples) / record.fs
+
+sig1 = record.p_signal[:samples, 0]
+sig2 = record.p_signal[:samples, 1]
+
+
+# Выбросы для отображаемого участка
+def get_outliers(sig_seg):
+    q1 = np.percentile(sig_seg, 25)
+    q3 = np.percentile(sig_seg, 75)
+    iqr = q3 - q1
+    return (sig_seg < q1 - 1.5 * iqr) | (sig_seg > q3 + 1.5 * iqr)
+
+
+outliers1 = get_outliers(sig1)
+outliers2 = get_outliers(sig2)
+
+fig, axs = plt.subplots(2, 1, figsize=(16, 8), sharex=True, constrained_layout=True)
+
+# Канал 1
+axs[0].plot(time, sig1, color='#1f77b4', linewidth=0.9, label='ЭКГ сигнал')
+axs[0].scatter(time[outliers1], sig1[outliers1], color='red', s=15, label='Выбросы')
+axs[0].set_title(f'Запись {record_name} — Канал 1', fontsize=14, fontweight='bold')
+axs[0].set_ylabel('Амплитуда (mV)')
+axs[0].grid(True, alpha=0.3)
+axs[0].legend(loc='upper right')
+
+# Канал 2
+axs[1].plot(time, sig2, color='#ff7f0e', linewidth=0.9, label='ЭКГ сигнал')
+axs[1].scatter(time[outliers2], sig2[outliers2], color='red', s=15, label='Выбросы')
+axs[1].set_title(f'Запись {record_name} — Канал 2', fontsize=14, fontweight='bold')
+axs[1].set_ylabel('Амплитуда (mV)')
+axs[1].set_xlabel('Время (секунды)')
+axs[1].grid(True, alpha=0.3)
+axs[1].legend(loc='upper right')
+
+plt.suptitle(f'Запись {record_name} — Первые {sec_to_show} секунд\n'
+             f'Анализ пропусков и выбросов (метод IQR)',
+             fontsize=15, fontweight='bold')
+
+plt.show()
