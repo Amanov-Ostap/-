@@ -1,1 +1,57 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from pathlib import Path
 
+# Папка с распакованной базой
+DATA_DIR = Path("mit-bih-supraventricular-arrhythmia-database-1.0.0")
+
+
+def read_ecg(record_name):
+    """Простое чтение одного канала из .dat файла"""
+    dat_file = DATA_DIR / f"{record_name}.dat"
+    data = np.fromfile(dat_file, dtype=np.uint8)
+    n = len(data) // 3
+    sig = np.zeros(n, dtype=np.int16)
+
+    for i in range(n):
+        b0, b1, b2 = data[3 * i:3 * i + 3]
+        val = b0 | ((b1 & 0x0F) << 8)
+        if val & 0x800:
+            val -= 0x1000
+        sig[i] = val
+    return sig
+
+
+# ===================== ПРОСТАЯ ВИЗУАЛИЗАЦИЯ =====================
+
+# Выбираем несколько записей для примера (можно менять)
+records = ["800", "850", "811", "873", "890"]
+
+plt.figure(figsize=(15, 10))
+
+for i, rec in enumerate(records, 1):
+    sig = read_ecg(rec)
+
+    # Первые 10 секунд (1280 сэмплов)
+    segment = sig[:1280]
+    t = np.arange(len(segment)) / 128.0
+
+    plt.subplot(3, 2, i)
+    plt.plot(t, segment, color='blue', linewidth=0.8)
+
+    # Выделяем выбросы красным (простой IQR)
+    q1, q3 = np.percentile(segment, [25, 75])
+    iqr = q3 - q1
+    outliers = (segment < q1 - 1.5 * iqr) | (segment > q3 + 1.5 * iqr)
+    plt.scatter(t[outliers], segment[outliers], color='red', s=8, label='Выбросы')
+
+    plt.title(f'Запись {rec} (первые 10 сек)')
+    plt.xlabel('Время (сек)')
+    plt.ylabel('Амплитуда')
+    plt.grid(True, alpha=0.3)
+    if i == 1:
+        plt.legend()
+
+plt.tight_layout()
+plt.suptitle('Визуализация ЭКГ сигналов с выделением выбросов\n(простой анализ)', fontsize=14, y=0.98)
+plt.show()
