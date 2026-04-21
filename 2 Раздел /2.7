@@ -1,1 +1,117 @@
+import wfdb
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy import signal
 
+# ========================= НАСТРОЙКИ =========================
+record_name = '800'  # ← Меняй здесь: 800, 850, 811, 873, 890 и т.д.
+path = 'mit-bih-supraventricular-arrhythmia-database-1.0.0'
+
+sec_to_show = 60  # Сколько секунд показывать
+
+# ========================= ЗАГРУЗКА =========================
+record = wfdb.rdrecord(f'{path}/{record_name}')
+
+sig1 = record.p_signal[:, 0]  # Канал 1 (полный сигнал)
+sig2 = record.p_signal[:, 1]  # Канал 2
+
+# ========================= АНАЛИЗ ШУМОВ =========================
+print("=== АНАЛИЗ ШУМОВ В ЭКГ ===")
+
+
+def analyze_noise(sig, fs=128, channel=1):
+    # 1. Baseline wander (низкочастотный дрейф < 0.5 Гц)
+    b, a = signal.butter(2, 0.5 / (fs / 2), btype='low')
+    baseline = signal.filtfilt(b, a, sig)
+    baseline_rms = np.sqrt(np.mean(baseline ** 2))
+
+    # 2. Высокочастотный шум (> 40 Гц)
+    b, a = signal.butter(4, 40 / (fs / 2), btype='high')
+    high_freq_noise = signal.filtfilt(b, a, sig)
+    hf_rms = np.sqrt(np.mean(high_freq_noise ** 2))
+
+    # 3. Powerline interference (50 Гц ± 2 Гц)
+    freqs, psd = signal.welch(sig, fs=fs, nperseg=1024)
+    powerline_band = (freqs > 48) & (freqs < 52)
+    powerline_power = np.sum(psd[powerline_band])
+
+    # 4. Общий уровень шума (RMS после удаления baseline)
+    clean_sig = sig - baseline
+    noise_rms = np.sqrt(np.mean((sig - clean_sig) ** 2))
+
+    # 5. SNR приближённо (сигнал / шум)
+    signal_rms = np.sqrt(np.mean(clean_sig ** 2))
+    snr = 20 * np.log10(signal_rms / (noise_rms + 1e-8))
+
+    print(f"Канал {channel}:")
+    print(f"   Baseline wander (RMS):     {baseline_rms:.4f} mV")
+    print(f"   High-frequency noise (RMS): {hf_rms:.4f} mV")
+    print(f"   Powerline interference:    {powerline_power:.2e}")
+    print(f"   Общий шум (RMS):           {noise_rms:.4f} mV")
+    print(f"   Примерный SNR:             {snr:.2f} dB\n")
+
+    return baseline, high_freq_noise, noise_rms, snr
+
+
+baseline1, hf1, noise1, snr1 = analyze_noise(sig1, record.fs, 1)
+
+baseline2, hf2, noise2, snr2 = analyze_noise(sig2, record.fs, 2)
+
+# ========================= ВИЗУАЛИЗАЦИЯ =========================
+samples = int(sec_to_show * record.fs)
+time = np.arange(samples) / record.fs
+
+sig1_show = sig1[:samples]
+sig2_show = sig2[:samples]
+baseline1_show = baseline1[:samples]
+
+fig, axs = plt.subplots(3, 2, figsize=(16, 12), constrained_layout=True)
+
+# Временной ряд + baseline wander
+axs[0, 0].plot(time, sig1_show, color='#1f77b4', linewidth=0.8, label='Оригинал')
+axs[0, 0].plot(time, baseline1_show, color='red', linewidth=1.5, label='Baseline wander')
+axs[0, 0].set_title(f'Канал 1 — Baseline wander')
+axs[0, 0].set_ylabel('Амплитуда (mV)')
+axs[0, 0].legend()
+axs[0, 0].grid(True, alpha=0.3)
+
+# Высокочастотный шум
+axs[0, 1].plot(time, sig1_show, color='#1f77b4', linewidth=0.8, alpha=0.6)
+axs[0, 1].plot(time, hf1[:samples], color='darkred', linewidth=0.9, label='High-freq noise')
+axs[0, 1].set_title(f'Канал 1 — Высокочастотный шум')
+axs[0, 1].legend()
+axs[0, 1].grid(True, alpha=0.3)
+
+# То же для Канала 2
+axs[1, 0].plot(time, sig2_show, color='#ff7f0e', linewidth=0.8, label='Оригинал')
+axs[1, 0].plot(time, baseline2[:samples], color='red', linewidth=1.5, label='Baseline wander')
+axs[1, 0].set_title(f'Канал 2 — Baseline wander')
+axs[1, 0].set_ylabel('Амплитуда (mV)')
+axs[1, 0].legend()
+axs[1, 0].grid(True, alpha=0.3)
+
+axs[1, 1].plot(time, sig2_show, color='#ff7f0e', linewidth=0.8, alpha=0.6)
+axs[1, 1].plot(time, hf2[:samples], color='darkred', linewidth=0.9, label='High-freq noise')
+axs[1, 1].set_title(f'Канал 2 — Высокочастотный шум')
+axs[1, 1].legend()
+axs[1, 1].grid(True, alpha=0.3)
+
+# Спектр мощности (PSD)
+freqs, psd1 = signal.welch(sig1, fs=record.fs, nperseg=2048)
+axs[2, 0].semilogy(freqs, psd1, color='#1f77b4')
+axs[2, 0].set_title('Спектр мощности — Канал 1')
+axs[2, 0].set_xlabel('Частота (Гц)')
+axs[2, 0].set_ylabel('PSD')
+axs[2, 0].grid(True, alpha=0.3)
+axs[2, 0].axvline(50, color='red', linestyle='--', alpha=0.5, label='50 Гц (powerline)')
+axs[2, 0].legend()
+
+freqs, psd2 = signal.welch(sig2, fs=record.fs, nperseg=2048)
+axs[2, 1].semilogy(freqs, psd2, color='#ff7f0e')
+axs[2, 1].set_title('Спектр мощности — Канал 2')
+axs[2, 1].set_xlabel('Частота (Гц)')
+axs[2, 1].grid(True, alpha=0.3)
+axs[2, 1].axvline(50, color='red', linestyle='--', alpha=0.5)
+
+plt.suptitle(f'Анализ шумов — Запись {record_name}', fontsize=16, fontweight='bold')
+plt.show()
