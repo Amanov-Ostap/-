@@ -1,0 +1,75 @@
+import numpy as np
+from PIL import Image
+import pandas as pd
+from pathlib import Path
+import matplotlib.pyplot as plt
+import time
+
+mask_dir = Path("PavementDamagesG-7/masks")
+
+class_colors = {
+    (0, 0, 0): "Background",
+    (250, 50, 83): "Cracks",
+    (61, 245, 61): "Alligator",
+    (42, 125, 209): "Potholes",
+    (245, 147, 49): "Markings",
+    (115, 51, 128): "Drains",
+    (250, 250, 55): "Patching"
+}
+
+print("Анализ аннотаций...\n")
+start = time.time()
+
+pixel_count = {name: 0 for name in class_colors.values()}
+image_count = {name: 0 for name in class_colors.values()}  # сколько изображений содержат класс
+total_images = 0
+
+for i, file in enumerate(sorted(mask_dir.glob("*.png")), 1):
+    mask = np.array(Image.open(file).convert("RGB"))
+    pixels = mask.reshape(-1, 3)
+    unique, counts = np.unique(pixels, axis=0, return_counts=True)
+
+    for color, cnt in zip(unique, counts):
+        key = tuple(color)
+        if key in class_colors:
+            name = class_colors[key]
+            pixel_count[name] += int(cnt)
+            if cnt > 0:
+                image_count[name] += 1  # класс присутствует на изображении
+
+    total_images += 1
+    if i % 100 == 0:
+        print(f"Обработано: {i:3d}/920")
+
+print(f"\n✅ Анализ завершён за {time.time() - start:.1f} секунд\n")
+
+#СВОДНАЯ ТАБЛИЦА
+total_pixels = sum(pixel_count.values())
+df = pd.DataFrame({
+    "Класс": list(pixel_count.keys()),
+    "Пикселей": list(pixel_count.values()),
+    "% пикселей": [round(v / total_pixels * 100, 3) for v in pixel_count.values()],
+    "Изображений с классом": [image_count[k] for k in pixel_count.keys()],
+    "% изображений": [round(image_count[k] / total_images * 100, 1) for k in pixel_count.keys()]
+})
+df = df.sort_values("% пикселей", ascending=False).reset_index(drop=True)
+
+print(df.to_string(index=False, formatters={
+    "Пикселей": "{:,}".format
+}))
+
+#ВИЗУАЛИЗАЦИЯ
+fig, ax = plt.subplots(1, 2, figsize=(14, 6))
+
+# 1. Распределение пикселей
+ax[0].barh(df["Класс"], df["% пикселей"], color="skyblue")
+ax[0].set_title("Распределение пикселей по классам (%)")
+ax[0].invert_yaxis()
+
+# 2. Частота по изображениям
+ax[1].barh(df["Класс"], df["% изображений"], color="salmon")
+ax[1].set_title("Процент изображений, содержащих класс")
+ax[1].invert_yaxis()
+
+plt.tight_layout()
+plt.show()
